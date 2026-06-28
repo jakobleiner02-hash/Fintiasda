@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Project Config Files</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f5f5f4;
+      color: #1c1c1a;
+      min-height: 100vh;
+    }
+
+    header {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e3;
+      padding: 1.25rem 2rem;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    header svg { color: #5c5c58; }
+
+    header h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #1c1c1a;
+    }
+
+    header span {
+      font-size: 13px;
+      color: #8a8a85;
+      margin-left: 4px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      min-height: calc(100vh - 61px);
+    }
+
+    .sidebar {
+      background: #fff;
+      border-right: 1px solid #e5e5e3;
+      padding: 1rem 0;
+    }
+
+    .sidebar-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #8a8a85;
+      text-transform: uppercase;
+      padding: 0 1rem 0.5rem;
+    }
+
+    .file-btn {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 8px 1rem;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      text-align: left;
+      transition: background 0.1s;
+      border-left: 2px solid transparent;
+    }
+
+    .file-btn:hover { background: #f5f5f4; }
+
+    .file-btn.active {
+      background: #f0f0ee;
+      border-left-color: #1c1c1a;
+    }
+
+    .file-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .file-info { overflow: hidden; }
+
+    .file-name {
+      font-size: 13px;
+      font-weight: 500;
+      color: #1c1c1a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-type {
+      font-size: 11px;
+      color: #8a8a85;
+    }
+
+    .main { display: flex; flex-direction: column; }
+
+    .toolbar {
+      background: #fff;
+      border-bottom: 1px solid #e5e5e3;
+      padding: 0.75rem 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .toolbar-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toolbar-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: #1c1c1a;
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    }
+
+    .badge {
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    .copy-btn {
+      font-size: 12px;
+      padding: 5px 12px;
+      border-radius: 6px;
+      border: 1px solid #d5d5d2;
+      background: #fff;
+      color: #5c5c58;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.1s;
+    }
+
+    .copy-btn:hover { background: #f5f5f4; }
+    .copy-btn.copied { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+
+    .code-area { flex: 1; padding: 1.5rem; overflow: auto; }
+
+    pre {
+      background: #1e1e2e;
+      border-radius: 10px;
+      padding: 1.5rem;
+      overflow-x: auto;
+      font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: #cdd6f4;
+    }
+
+    .line-nums {
+      display: inline-block;
+      user-select: none;
+      color: #45475a;
+      text-align: right;
+      min-width: 2.5em;
+      margin-right: 1.5em;
+      border-right: 1px solid #313244;
+      padding-right: 1em;
+    }
+
+    /* Syntax colors (Catppuccin Mocha inspired) */
+    .k  { color: #cba6f7; }   /* keywords / keys */
+    .s  { color: #a6e3a1; }   /* strings */
+    .n  { color: #89b4fa; }   /* names / identifiers */
+    .c  { color: #6c7086; font-style: italic; } /* comments */
+    .num { color: #fab387; }  /* booleans / numbers */
+    .p  { color: #94e2d5; }   /* punctuation / operators */
+    .imp { color: #f38ba8; }  /* import/export keywords */
+
+    .panel { display: none; height: 100%; flex-direction: column; }
+    .panel.active { display: flex; }
+
+    @media (max-width: 640px) {
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid #e5e5e3; padding: 0.5rem; display: flex; gap: 4px; flex-wrap: wrap; }
+      .sidebar-label { display: none; }
+      .file-btn { width: auto; border-left: none; border-radius: 6px; padding: 6px 10px; }
+      .file-btn.active { border-left: none; border-bottom: 2px solid #1c1c1a; }
+      .file-info .file-type { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <path d="M3 7l9-4 9 4v10l-9 4-9-4V7z"/>
+    <path d="M12 3v18M3 7l9 4 9-4"/>
+  </svg>
+  <h1>nextjs-postgresql-template <span>— Konfigurationsdateien</span></h1>
+</header>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-label">Config Files</div>
+
+    <button class="file-btn active" onclick="show('package')" id="btn-package">
+      <div class="file-icon" style="background:#fef3c7;color:#92400e;">npm</div>
+      <div class="file-info">
+        <div class="file-name">package.json</div>
+        <div class="file-type">npm</div>
+      </div>
+    </button>
+
+    <button class="file-btn" onclick="show('tsconfig')" id="btn-tsconfig">
+      <div class="file-icon" style="background:#dbeafe;color:#1e40af;">TS</div>
+      <div class="file-info">
+        <div class="file-name">tsconfig.json</div>
+        <div class="file-type">TypeScript</div>
+      </div>
+    </button>
+
+    <button class="file-btn" onclick="show('drizzle')" id="btn-drizzle">
+      <div class="file-icon" style="background:#d1fae5;color:#065f46;">DB</div>
+      <div class="file-info">
+        <div class="file-name">drizzle.config.json</div>
+        <div class="file-type">Drizzle ORM</div>
+      </div>
+    </button>
+
+    <button class="file-btn" onclick="show('next')" id="btn-next">
+      <div class="file-icon" style="background:#f3f4f6;color:#111827;">NX</div>
+      <div class="file-info">
+        <div class="file-name">next.config.ts</div>
+        <div class="file-type">Next.js</div>
+      </div>
+    </button>
+
+    <button class="file-btn" onclick="show('eslint')" id="btn-eslint">
+      <div class="file-icon" style="background:#ede9fe;color:#5b21b6;">ES</div>
+      <div class="file-info">
+        <div class="file-name">eslint.config.mjs</div>
+        <div class="file-type">ESLint</div>
+      </div>
+    </button>
+
+    <button class="file-btn" onclick="show('postcss')" id="btn-postcss">
+      <div class="file-icon" style="background:#fce7f3;color:#9d174d;">CSS</div>
+      <div class="file-info">
+        <div class="file-name">postcss.config.mjs</div>
+        <div class="file-type">PostCSS</div>
+      </div>
+    </button>
+  </nav>
+
+  <main class="main">
+
+    <!-- package.json -->
+    <div class="panel active" id="panel-package">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">package.json</span>
+          <span class="badge" style="background:#fef3c7;color:#92400e;">npm</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode('package')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Kopieren
+        </button>
+      </div>
+      <div class="code-area">
+        <pre id="code-package">{
+  <span class="k">"name"</span><span class="p">:</span> <span class="s">"nextjs-postgresql-template"</span><span class="p">,</span>
+  <span class="k">"private"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+  <span class="k">"scripts"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"dev"</span><span class="p">:</span> <span class="s">"next dev"</span><span class="p">,</span>
+    <span class="k">"build"</span><span class="p">:</span> <span class="s">"next build"</span><span class="p">,</span>
+    <span class="k">"start"</span><span class="p">:</span> <span class="s">"next start"</span><span class="p">,</span>
+    <span class="k">"lint"</span><span class="p">:</span> <span class="s">"eslint ."</span><span class="p">,</span>
+    <span class="k">"typecheck"</span><span class="p">:</span> <span class="s">"tsc --noEmit"</span>
+  <span class="p">},</span>
+  <span class="k">"dependencies"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"@types/bcryptjs"</span><span class="p">:</span> <span class="s">"^2.4.6"</span><span class="p">,</span>
+    <span class="k">"@types/jsonwebtoken"</span><span class="p">:</span> <span class="s">"^9.0.10"</span><span class="p">,</span>
+    <span class="k">"@types/multer"</span><span class="p">:</span> <span class="s">"^2.1.0"</span><span class="p">,</span>
+    <span class="k">"bcryptjs"</span><span class="p">:</span> <span class="s">"^3.0.3"</span><span class="p">,</span>
+    <span class="k">"cookies-next"</span><span class="p">:</span> <span class="s">"^6.1.1"</span><span class="p">,</span>
+    <span class="k">"date-fns"</span><span class="p">:</span> <span class="s">"^4.4.0"</span><span class="p">,</span>
+    <span class="k">"dotenv"</span><span class="p">:</span> <span class="s">"17.3.1"</span><span class="p">,</span>
+    <span class="k">"drizzle-orm"</span><span class="p">:</span> <span class="s">"0.45.2"</span><span class="p">,</span>
+    <span class="k">"jose"</span><span class="p">:</span> <span class="s">"^6.2.3"</span><span class="p">,</span>
+    <span class="k">"jsonwebtoken"</span><span class="p">:</span> <span class="s">"^9.0.3"</span><span class="p">,</span>
+    <span class="k">"lucide-react"</span><span class="p">:</span> <span class="s">"^1.21.0"</span><span class="p">,</span>
+    <span class="k">"multer"</span><span class="p">:</span> <span class="s">"^2.2.0"</span><span class="p">,</span>
+    <span class="k">"next"</span><span class="p">:</span> <span class="s">"16.2.6"</span><span class="p">,</span>
+    <span class="k">"pg"</span><span class="p">:</span> <span class="s">"8.20.0"</span><span class="p">,</span>
+    <span class="k">"react"</span><span class="p">:</span> <span class="s">"19.2.6"</span><span class="p">,</span>
+    <span class="k">"react-dom"</span><span class="p">:</span> <span class="s">"19.2.6"</span><span class="p">,</span>
+    <span class="k">"recharts"</span><span class="p">:</span> <span class="s">"^3.9.0"</span>
+  <span class="p">},</span>
+  <span class="k">"devDependencies"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"@tailwindcss/postcss"</span><span class="p">:</span> <span class="s">"4.1.17"</span><span class="p">,</span>
+    <span class="k">"@types/node"</span><span class="p">:</span> <span class="s">"22.19.15"</span><span class="p">,</span>
+    <span class="k">"@types/pg"</span><span class="p">:</span> <span class="s">"8.18.0"</span><span class="p">,</span>
+    <span class="k">"@types/react"</span><span class="p">:</span> <span class="s">"19.2.14"</span><span class="p">,</span>
+    <span class="k">"@types/react-dom"</span><span class="p">:</span> <span class="s">"19.2.3"</span><span class="p">,</span>
+    <span class="k">"drizzle-kit"</span><span class="p">:</span> <span class="s">"0.31.10"</span><span class="p">,</span>
+    <span class="k">"eslint"</span><span class="p">:</span> <span class="s">"9.39.4"</span><span class="p">,</span>
+    <span class="k">"eslint-config-next"</span><span class="p">:</span> <span class="s">"16.2.6"</span><span class="p">,</span>
+    <span class="k">"postcss"</span><span class="p">:</span> <span class="s">"8.5.8"</span><span class="p">,</span>
+    <span class="k">"tailwindcss"</span><span class="p">:</span> <span class="s">"4.1.17"</span><span class="p">,</span>
+    <span class="k">"typescript"</span><span class="p">:</span> <span class="s">"5.9.3"</span>
+  <span class="p">}</span>
+<span class="p">}</span></pre>
+      </div>
+    </div>
+
+    <!-- tsconfig.json -->
+    <div class="panel" id="panel-tsconfig">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">tsconfig.json</span>
+          <span class="badge" style="background:#dbeafe;color:#1e40af;">TypeScript</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode('tsconfig')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Kopieren
+        </button>
+      </div>
+      <div class="code-area">
+        <pre id="code-tsconfig">{
+  <span class="k">"compilerOptions"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"target"</span><span class="p">:</span> <span class="s">"ES2017"</span><span class="p">,</span>
+    <span class="k">"lib"</span><span class="p">:</span> <span class="p">[</span><span class="s">"dom"</span><span class="p">,</span> <span class="s">"dom.iterable"</span><span class="p">,</span> <span class="s">"esnext"</span><span class="p">],</span>
+    <span class="k">"allowJs"</span><span class="p">:</span> <span class="num">false</span><span class="p">,</span>
+    <span class="k">"skipLibCheck"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"strict"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"noEmit"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"esModuleInterop"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"module"</span><span class="p">:</span> <span class="s">"esnext"</span><span class="p">,</span>
+    <span class="k">"moduleResolution"</span><span class="p">:</span> <span class="s">"bundler"</span><span class="p">,</span>
+    <span class="k">"resolveJsonModule"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"isolatedModules"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"jsx"</span><span class="p">:</span> <span class="s">"react-jsx"</span><span class="p">,</span>
+    <span class="k">"incremental"</span><span class="p">:</span> <span class="num">true</span><span class="p">,</span>
+    <span class="k">"baseUrl"</span><span class="p">:</span> <span class="s">"."</span><span class="p">,</span>
+    <span class="k">"paths"</span><span class="p">:</span> <span class="p">{</span>
+      <span class="k">"@/*"</span><span class="p">:</span> <span class="p">[</span><span class="s">"./src/*"</span><span class="p">]</span>
+    <span class="p">},</span>
+    <span class="k">"plugins"</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span> <span class="k">"name"</span><span class="p">:</span> <span class="s">"next"</span> <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">},</span>
+  <span class="k">"include"</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s">"next-env.d.ts"</span><span class="p">,</span>
+    <span class="s">"**/*.ts"</span><span class="p">,</span>
+    <span class="s">"**/*.tsx"</span><span class="p">,</span>
+    <span class="s">".next/types/**/*.ts"</span><span class="p">,</span>
+    <span class="s">".next/dev/types/**/*.ts"</span>
+  <span class="p">],</span>
+  <span class="k">"exclude"</span><span class="p">:</span> <span class="p">[</span><span class="s">"node_modules"</span><span class="p">]</span>
+<span class="p">}</span></pre>
+      </div>
+    </div>
+
+    <!-- drizzle.config.json -->
+    <div class="panel" id="panel-drizzle">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">drizzle.config.json</span>
+          <span class="badge" style="background:#d1fae5;color:#065f46;">Drizzle ORM</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode('drizzle')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Kopieren
+        </button>
+      </div>
+      <div class="code-area">
+        <pre id="code-drizzle">{
+  <span class="k">"dialect"</span><span class="p">:</span> <span class="s">"postgresql"</span><span class="p">,</span>
+  <span class="k">"schema"</span><span class="p">:</span> <span class="s">"./src/db/schema.ts"</span><span class="p">,</span>
+  <span class="k">"dbCredentials"</span><span class="p">:</span> <span class="p">{</span>
+    <span class="k">"url"</span><span class="p">:</span> <span class="s">"postgresql://postgres:postgres@127.0.0.1:5432/app_db"</span>
+  <span class="p">}</span>
+<span class="p">}</span></pre>
+      </div>
+    </div>
+
+    <!-- next.config.ts -->
+    <div class="panel" id="panel-next">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">next.config.ts</span>
+          <span class="badge" style="background:#f3f4f6;color:#111827;">Next.js</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode('next')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Kopieren
+        </button>
+      </div>
+      <div class="code-area">
+        <pre id="code-next"><span class="imp">import</span> <span class="n">type</span> <span class="p">{</span> <span class="n">NextConfig</span> <span class="p">}</span> <span class="imp">from</span> <span class="s">"next"</span><span class="p">;</span>
+
+<span class="k">const</span> <span class="n">nextConfig</span><span class="p">:</span> <span class="n">NextConfig</span> <span class="p">=</span> <span class="p">{};</span>
+
+<span class="imp">export default</span> <span class="n">nextConfig</span><span class="p">;</span></pre>
+      </div>
+    </div>
+
+    <!-- eslint.config.mjs -->
+    <div class="panel" id="panel-eslint">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">eslint.config.mjs</span>
+          <span class="badge" style="background:#ede9fe;color:#5b21b6;">ESLint</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode('eslint')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Kopieren
+        </button>
+      </div>
+      <div class="code-area">
+        <pre id="code-eslint"><span class="imp">import</span> <span class="p">{</span> <span class="n">defineConfig</span><span class="p">,</span> <span class="n">globalIgnores</span> <span class="p">}</span> <span class="imp">from</span> <span class="s">"eslint/config"</span><span class="p">;</span>
+<span class="imp">import</span> <span class="n">nextCoreWebVitals</span> <span class="imp">from</span> <span class="s">"eslint-config-next/core-web-vitals"</span><span class="p">;</span>
+
+<span class="imp">export default</span> <span class="n">defineConfig</span><span class="p">([</span>
+  <span class="c">// Flat config export for the pinned ESLint/Next toolchain</span>
+  <span class="p">...</span><span class="n">nextCoreWebVitals</span><span class="p">,</span>
+  <span class="n">globalIgnores</span><span class="p">([</span>
+    <span class="s">".next/**"</span><span class="p">,</span>
+    <span class="s">"out/**"</span><span class="p">,</span>
+    <span class="s">"build/**"</span><span class="p">,</span>
+    <span class="s">"next-env.d.ts"</span>
+  <span class="p">]),</span>
+<span class="p">]);</span></pre>
+      </div>
+    </div>
+
+    <!-- postcss.config.mjs -->
+    <div class="panel" id="panel-postcss">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <span class="toolbar-title">postcss.config.mjs</span>
+          <span class="badge" style="background:#fce7f3;color:#9d174d;">PostCSS</span>
+        </div>
+        <button class="copy-btn" onclick="copyCode('postcss')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+          Kopieren
+        </button>
+      </div>
+      <div class="code-area">
+        <pre id="code-postcss"><span class="k">const</span> <span class="n">postcssConfig</span> <span class="p">=</span> <span class="p">{</span>
+  <span class="k">plugins</span><span class="p">:</span> <span class="p">{</span>
+    <span class="s">"@tailwindcss/postcss"</span><span class="p">:</span> <span class="p">{},</span>
+  <span class="p">},</span>
+<span class="p">};</span>
+
+<span class="imp">export default</span> <span class="n">postcssConfig</span><span class="p">;</span></pre>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+  function show(id) {
+    document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.file-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('panel-' + id).classList.add('active');
+    document.getElementById('btn-' + id).classList.add('active');
+  }
+
+  function copyCode(id) {
+    const el = document.getElementById('code-' + id);
+    const text = el.innerText;
+    navigator.clipboard.writeText(text).then(() => {
+      const btn = el.closest('.panel').querySelector('.copy-btn');
+      btn.classList.add('copied');
+      btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg> Kopiert!`;
+      setTimeout(() => {
+        btn.classList.remove('copied');
+        btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Kopieren`;
+      }, 2000);
+    });
+  }
+</script>
+
+</body>
+</html>
